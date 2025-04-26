@@ -1,11 +1,11 @@
 """
-Dino Jump
+Spaceship Asteroid Shooter (Fixed)
 
-Use the arrow keys to move the blue square up and down to avoid the black
-obstacles. The game should end when the player collides with an obstacle ...
-but it does not. It's a work in progress, and you'll have to finish it. 
-
+Arrow keys = thrust up/down
+Spacebar = shoot bullets
+Avoid the asteroids!
 """
+
 import pygame
 import random
 from pathlib import Path
@@ -13,154 +13,150 @@ from pathlib import Path
 # Initialize Pygame
 pygame.init()
 
-images_dir = Path(__file__).parent / "images" if (Path(__file__).parent / "images").exists() else Path(__file__).parent / "assets"
-
-# Screen dimensions
+# Screen settings
 WIDTH, HEIGHT = 600, 300
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Dino Jump")
+pygame.display.set_caption("Spaceship Asteroid Shooter")
 
-# Colors
-BLUE = (0, 0, 255)
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-
-# FPS
+# Clock and FPS
+clock = pygame.time.Clock()
 FPS = 60
 
-# Player attributes
-PLAYER_SIZE = 25
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
 
-player_speed = 5
+# Load images (or make fake ones if missing)
+images_dir = Path(__file__).parent / "images"
+try:
+    spaceship_img = pygame.image.load(images_dir / "ship.png")
+except:
+    spaceship_img = pygame.Surface((40, 30))
+    spaceship_img.fill((0, 0, 255))
 
-# Obstacle attributes
-OBSTACLE_WIDTH = 20
-OBSTACLE_HEIGHT = 20
-obstacle_speed = 5
+try:
+    asteroid_img = pygame.image.load(images_dir / "asteroid.png")
+except:
+    asteroid_img = pygame.Surface((40, 40))
+    asteroid_img.fill((150, 150, 150))
 
-# Font
-font = pygame.font.SysFont(None, 36)
+spaceship_img = pygame.transform.scale(spaceship_img, (60, 40))
+asteroid_img = pygame.transform.scale(asteroid_img, (50, 50))
 
-
-# Define an obstacle class
-class Obstacle(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-        self.image = pygame.Surface((OBSTACLE_WIDTH, OBSTACLE_HEIGHT))
-        self.image.fill(BLACK)
-        self.rect = self.image.get_rect()
-        self.rect.x = WIDTH
-        self.rect.y = HEIGHT - OBSTACLE_HEIGHT - 10
-
-        self.explosion = pygame.image.load(images_dir / "explosion1.gif")
-
-    def update(self):
-        self.rect.x -= obstacle_speed
-        # Remove the obstacle if it goes off screen
-        if self.rect.right < 0:
-            self.kill()
-
-    def explode(self):
-        """Replace the image with an explosition image."""
-        
-        # Load the explosion image
-        self.image = self.explosion
-        self.image = pygame.transform.scale(self.image, (OBSTACLE_WIDTH, OBSTACLE_HEIGHT))
-        self.rect = self.image.get_rect(center=self.rect.center)
-
-
-# Define a player class
+# Player class
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
-        self.image.fill(BLUE)
+        self.image = spaceship_img
         self.rect = self.image.get_rect()
         self.rect.x = 50
-        self.rect.y = HEIGHT - PLAYER_SIZE - 10
-        self.speed = player_speed
+        self.rect.centery = HEIGHT // 2
+        self.velocity = 0
 
     def update(self):
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
-            self.rect.y -= self.speed
+            self.velocity -= 0.5
         if keys[pygame.K_DOWN]:
-            self.rect.y += self.speed
+            self.velocity += 0.5
 
-        # Keep the player on screen
+        self.velocity += 0.3  # Gravity
+        self.rect.y += self.velocity
+
+        # Stay on screen
         if self.rect.top < 0:
             self.rect.top = 0
+            self.velocity = 0
         if self.rect.bottom > HEIGHT:
             self.rect.bottom = HEIGHT
+            self.velocity = 0
 
-# Create a player object
+    def shoot(self):
+        bullet = Bullet(self.rect.right, self.rect.centery)
+        all_sprites.add(bullet)
+        bullets.add(bullet)
+
+# Bullet class
+class Bullet(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.Surface((10, 4))
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.center = (x, y)
+
+    def update(self):
+        self.rect.x += 8
+        if self.rect.left > WIDTH:
+            self.kill()
+
+# Asteroid class
+class Asteroid(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.original_image = asteroid_img
+        self.image = self.original_image.copy()
+        self.rect = self.image.get_rect()
+        self.rect.x = WIDTH + random.randint(0, 100)
+        self.rect.y = random.randint(0, HEIGHT - 50)
+        self.rotation = 0
+        self.rotation_speed = random.choice([-2, -1, 1, 2])
+
+    def update(self):
+        self.rect.x -= 5
+        self.rotation += self.rotation_speed
+        old_center = self.rect.center
+        self.image = pygame.transform.rotate(self.original_image, self.rotation)
+        self.rect = self.image.get_rect(center=old_center)
+
+        if self.rect.right < 0:
+            self.kill()
+
+# Groups
+all_sprites = pygame.sprite.Group()
+asteroids = pygame.sprite.Group()
+bullets = pygame.sprite.Group()
+
 player = Player()
-player_group = pygame.sprite.GroupSingle(player)
+all_sprites.add(player)
 
-# Add obstacles periodically
-def add_obstacle(obstacles):
-    # random.random() returns a random float between 0 and 1, so a value
-    # of 0.25 means that there is a 25% chance of adding an obstacle. Since
-    # add_obstacle() is called every 100ms, this means that on average, an
-    # obstacle will be added every 400ms.
-    # The combination of the randomness and the time allows for random
-    # obstacles, but not too close together. 
-    
-    if random.random() < 0.4:
-        obstacle = Obstacle()
-        obstacles.add(obstacle)
-        return 1
-    return 0
+# Asteroid timer
+ASTEROID_EVENT = pygame.USEREVENT + 1
+pygame.time.set_timer(ASTEROID_EVENT, 1000)  # Spawn every 1 second
 
+# Game loop
+running = True
+while running:
+    clock.tick(FPS)
 
-# Main game loop
-def game_loop():
-    clock = pygame.time.Clock()
-    game_over = False
-    last_obstacle_time = pygame.time.get_ticks()
+    # Events
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
 
-    # Group for obstacles
-    obstacles = pygame.sprite.Group()
+        if event.type == ASTEROID_EVENT:
+            asteroid = Asteroid()
+            all_sprites.add(asteroid)
+            asteroids.add(asteroid)
 
-    player = Player()
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                player.shoot()
 
-    obstacle_count = 0
+    # Update
+    all_sprites.update()
 
-    while not game_over:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
+    # Bullet hits asteroid
+    hits = pygame.sprite.groupcollide(bullets, asteroids, True, True)
 
-        # Update player
-        player.update()
+    # Player hits asteroid
+    if pygame.sprite.spritecollide(player, asteroids, False):
+        running = False
 
-        # Add obstacles and update
-        if pygame.time.get_ticks() - last_obstacle_time > 500:
-            last_obstacle_time = pygame.time.get_ticks()
-            obstacle_count += add_obstacle(obstacles)
-        
-        obstacles.update()
+    # Draw
+    screen.fill(BLACK)
+    all_sprites.draw(screen)
 
-        # Check for collisions
-        collider = pygame.sprite.spritecollide(player, obstacles, dokill=False)
-        if collider:
-            collider[0].explode()
-       
-        # Draw everything
-        screen.fill(WHITE)
-        pygame.draw.rect(screen, BLUE, player)
-        obstacles.draw(screen)
+    pygame.display.flip()
 
-        # Display obstacle count
-        obstacle_text = font.render(f"Obstacles: {obstacle_count}", True, BLACK)
-        screen.blit(obstacle_text, (10, 10))
-
-        pygame.display.update()
-        clock.tick(FPS)
-
-    # Game over screen
-    screen.fill(WHITE)
-
-if __name__ == "__main__":
-    game_loop()
+pygame.quit()

@@ -1,55 +1,81 @@
-"""
-Example of loading a background image that is not as wide as the screen, and
-tiling it to fill the screen.
-
-"""
 import pygame
 
 # Initialize Pygame
 pygame.init()
 
-from pathlib import Path
-assets = Path(__file__).parent / 'images'
-
 # Set up display
 screen_width = 600
 screen_height = 600
 screen = pygame.display.set_mode((screen_width, screen_height))
-pygame.display.set_caption('Tiled Background')
+pygame.display.set_caption('Scrolling Colored Background')
 
-def make_tiled_bg(screen, bg_file):
-    # Scale background to match the screen height
-    
-    bg_tile = pygame.image.load(bg_file).convert()
-    
-    background_height = screen.get_height()
-    bg_tile = pygame.transform.scale(bg_tile, (bg_tile.get_width(), screen.get_height()))
+def create_color_tile(color, width, height):
+    """Create a Surface filled with the given color."""
+    tile = pygame.Surface((width, height))
+    tile.fill(color)
+    return tile
 
-    # Get the dimensions of the background after scaling
-    background_width = bg_tile.get_width()
+def make_tiled_color_bg(screen):
+    """Create a background using colored tiles."""
+    tile_width = 100
+    tile_height = screen.get_height()
 
-    # Make an image the is the same size as the screen
-    image = pygame.Surface((screen.get_width(), screen.get_height()))
+    # Define 6 different colors
+    colors = [
+        (255, 0, 0),    # Red
+        (0, 255, 0),    # Green
+        (0, 0, 255),    # Blue
+        (255, 255, 0),  # Yellow
+        (255, 0, 255),  # Magenta
+        (0, 255, 255)   # Cyan
+    ]
 
-    # Tile the background image in the x-direction
-    for x in range(0, screen.get_width(), background_width):
-        image.blit(bg_tile, (x, 0))
-        
-    return image
+    # Create 6 tiles
+    tiles = [create_color_tile(color, tile_width, tile_height) for color in colors]
 
-background = make_tiled_bg(screen, assets/'background_tile.gif')
+    # Make a background 2x the screen width
+    background = pygame.Surface((screen.get_width() * 2, screen.get_height()))
 
-# Main loop
+    # Tile the background image across the whole width (twice)
+    x = 0
+    tile_index = 0
+    while x < background.get_width():
+        tile = tiles[tile_index % len(tiles)]
+        background.blit(tile, (x, 0))
+        x += tile_width
+        tile_index += 1
+
+    return background
+
+# Create da background
+background = make_tiled_color_bg(screen)
+
+
+background_x = 0
+
+
 running = True
+clock = pygame.time.Clock()  
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    screen.blit(background,(0,0))
+    
+    background_x -= 10
 
-    # Update the display
+    
+    if background_x <= -screen_width:
+        background_x = 0
+
+    # Draw da background
+    screen.blit(background, (background_x, 0))
+
+    
     pygame.display.flip()
 
-# Quit Pygame
+    # Control da frame rate
+    clock.tick(600)
+
+# Quit da epelepsy killer
 pygame.quit()
