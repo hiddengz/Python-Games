@@ -1,113 +1,151 @@
 import pygame
 from jtlgames.spritesheet import SpriteSheet
 from pathlib import Path
+import sys
 
 images = Path(__file__).parent / 'images'
 
-
 def scale_sprites(sprites, scale):
-    """Scale a list of sprites by a given factor.
-
-    Args:
-        sprites (list): List of pygame.Surface objects.
-        scale (int): Scale factor.
-
-    Returns:
-        list: List of scaled pygame.Surface objects.
-    """
     return [pygame.transform.scale(sprite, (sprite.get_width() * scale, sprite.get_height() * scale)) for sprite in sprites]
 
-def main():
-    # Initialize Pygame
-    pygame.init()
+class Frog(pygame.sprite.Sprite):
+    def __init__(self, sprites):
+        super().__init__()
+        self.sprites = sprites
+        self.index = 0
+        self.image = self.sprites[self.index]
+        self.rect = self.image.get_rect(center=(320, 400))
+        self.vector = pygame.math.Vector2(0, -1)
+        self.speed = 10
+        self.is_jumping = False
+        self.velocity = pygame.math.Vector2(0, 0)
+        self.frames_per_image = 6
+        self.frame_count = 0
 
-    # Set up the display
-    screen = pygame.display.set_mode((640, 480))
-    pygame.display.set_caption("Sprite Animation Test")
+    def update(self):
+        if self.is_jumping:
+            self.rect.center += self.velocity
+        else:
+            self.frame_count += 1
+            if self.frame_count % self.frames_per_image == 0:
+                self.index = (self.index + 1) % len(self.sprites)
+                self.image = self.sprites[self.index]
 
-    # Load the sprite sheet
-    filename = images / 'spritesheet.png'  # Replace with your actual file path
-    cellsize = (16, 16)  # Replace with the size of your sprites
-    spritesheet = SpriteSheet(filename, cellsize)
+    def start_jump(self):
+        if not self.is_jumping:
+            self.is_jumping = True
+            self.index = 0
+            self.image = self.sprites[self.index]
+            self.velocity = self.vector * self.speed
 
+    def stop_jump(self):
+        self.is_jumping = False
+        self.velocity = pygame.math.Vector2(0, 0)
+        self.index = 0
+        self.image = self.sprites[self.index]
 
-    # Load a strip sprites
-    frog_sprites = scale_sprites(spritesheet.load_strip(0, 4, colorkey=-1) , 4)
-    allig_sprites = scale_sprites(spritesheet.load_strip( (0,4), 7, colorkey=-1), 4)
+class Alligator(pygame.sprite.Sprite):
+    def __init__(self, sprites, target):
+        super().__init__()
+        self.sprites = sprites
+        self.target = target
+        self.index = 0
+        self.image = self.draw_alligator()
+        self.rect = self.image.get_rect(center=(320, 100))
+        self.speed = 2
+        self.frames_per_image = 6
+        self.frame_count = 0
 
-    # Compose an image
-    log = spritesheet.compose_horiz([24, 25, 26], colorkey=-1)
-    log = pygame.transform.scale(log, (log.get_width() * 4, log.get_height() * 4))
-
-    # Variables for animation
-    frog_index = 0
-    allig_index = 0
-    frames_per_image = 6
-    frame_count = 0
-
-    # Main game loop
-    running = True
-    
-    sprite_rect = frog_sprites[0].get_rect(center=(screen.get_width() // 2, screen.get_height() // 2))
-    
-    pygame.math.Vector2(1, 0)
-    def draw_alligator(alligator, index):
-        """Creates a composed image of the alligator sprites.
-
-        Args:
-            alligator (list): List of alligator sprites.
-            index (int): Index value to determine the right side sprite.
-
-        Returns:
-            pygame.Surface: Composed image of the alligator.
-        """
+    def update(self):
+        # Move towards frog
+        direction = pygame.math.Vector2(self.target.rect.center) - pygame.math.Vector2(self.rect.center)
+        if direction.length() > 1:
+            direction = direction.normalize()
+            self.rect.center += direction * self.speed
         
-        index = index % (len(alligator)-2)
-        
-        width = alligator[0].get_width()
-        height = alligator[0].get_height()
+        # Animate
+        self.frame_count += 1
+        if self.frame_count % self.frames_per_image == 0:
+            self.index = (self.index + 1) % (len(self.sprites) - 2)
+            self.image = self.draw_alligator()
+
+    def draw_alligator(self):
+        width = self.sprites[0].get_width()
+        height = self.sprites[0].get_height()
         composed_image = pygame.Surface((width * 3, height), pygame.SRCALPHA)
-
-        composed_image.blit(alligator[0], (0, 0))
-        composed_image.blit(alligator[1], (width, 0))
-        composed_image.blit(alligator[(index + 2) % len(alligator)], (width * 2, 0))
-
+        composed_image.blit(self.sprites[0], (0, 0))
+        composed_image.blit(self.sprites[1], (width, 0))
+        composed_image.blit(self.sprites[(self.index + 2) % len(self.sprites)], (width * 2, 0))
         return composed_image
-    
+
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((640, 480))
+    pygame.display.set_caption("Frog vs Alligator")
+    clock = pygame.time.Clock()
+
+    # Load sprites
+    spritesheet = SpriteSheet(images / 'spritesheet.png', (16, 16))
+    frog_sprites = scale_sprites(spritesheet.load_strip(0, 4, colorkey=-1), 4)
+    allig_sprites = scale_sprites(spritesheet.load_strip((0, 4), 7, colorkey=-1), 4)
+
+    frog = Frog(frog_sprites)
+    alligator = Alligator(allig_sprites, frog)
+
+    all_sprites = pygame.sprite.Group()
+    all_sprites.add(frog)
+    all_sprites.add(alligator)
+
+    font = pygame.font.SysFont(None, 60)
+    game_over = False
+
+    running = True
     while running:
-        screen.fill((0, 0, 139))  # Clear screen with deep blue
+        screen.fill((0, 0, 139))  # Dark blue background
+        keys = pygame.key.get_pressed()
 
-        # Update animation every few frames
-        frame_count += 1
-        
-        if frame_count % frames_per_image == 0: 
-            frog_index = (frog_index + 1) % len(frog_sprites)
-            allig_index = (allig_index + 1) % len(allig_sprites)
-        
-        # Get the current sprite and display it in the middle of the screen
+        # Handle input for frog direction
+        if keys[pygame.K_LEFT]:
+            frog.vector = pygame.math.Vector2(-1, 0)
+        elif keys[pygame.K_RIGHT]:
+            frog.vector = pygame.math.Vector2(1, 0)
+        elif keys[pygame.K_UP]:
+            frog.vector = pygame.math.Vector2(0, -1)
+        elif keys[pygame.K_DOWN]:
+            frog.vector = pygame.math.Vector2(0, 1)
 
-        
-        screen.blit(frog_sprites[frog_index], sprite_rect)
-
-        composed_alligator = draw_alligator(allig_sprites, allig_index)
-        screen.blit(composed_alligator,  sprite_rect.move(0, 100))
-
-        screen.blit(log,  sprite_rect.move(0, -100))
-
-
-        # Update the display
-        pygame.display.flip()
-
-        # Handle events
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if not game_over and event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    frog.start_jump()
 
-        # Cap the frame rate
-        pygame.time.Clock().tick(60)
+        if not game_over:
+            all_sprites.update()
 
-    # Quit Pygame
+            if frog.is_jumping:
+                # Stop jump after distance
+                frog.speed -= 0.5
+                if frog.speed <= 0:
+                    frog.stop_jump()
+                    frog.speed = 10
+
+            # Check collision
+            if pygame.sprite.collide_rect(frog, alligator):
+                game_over = True
+
+        all_sprites.draw(screen)
+
+        if game_over:
+            text = font.render("GAME OVER", True, (255, 0, 0))
+            screen.blit(text, (200, 220))
+
+        pygame.display.flip()
+        clock.tick(60)
+
     pygame.quit()
+    sys.exit()
 
 if __name__ == "__main__":
     main()

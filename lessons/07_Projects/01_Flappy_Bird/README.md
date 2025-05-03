@@ -28,8 +28,7 @@ Start by creating the background, by displaying the background image, which must
 
 Use code like this to get the background:
 
-```python
-from pathlib import Path
+```python from pathlib import Path
 assets = Path(__file__).parent / 'assets'
 background = pygame.image.load(assets/'background.png')
 ```
