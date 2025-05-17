@@ -14,6 +14,7 @@ The goal of **Space Invaders** is to defend Earth from waves of descending alien
    - The player controls a laser cannon, which moves horizontally along the bottom of the screen. 
    - The cannon can shoot upwards to destroy the approaching alien invaders.
    - The player can only fire one shot at a time, and must wait until the shot has hit an alien or gone off-screen before firing again.
+   - they also have an ability to shoot a "mega shot" which is a bullet that grows larger and larger after being shoot. it has a cooldown of 10 and uses a diffrent button
 
 2. **Alien Invaders**: 
    - The aliens are arranged in rows and columns at the top of the screen, slowly moving from side to side while gradually descending toward the player.
