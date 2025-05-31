@@ -44,11 +44,13 @@ player's score is based on how far they managed to run.
      increases (e.g., closely spaced cacti or pterodactyls flying at tricky
      heights).
 
+every 100 points make a giant pterodactyl fly overhead
+
 ## Controls
 
-- **Jump**: Press the spacebar (or tap the screen on mobile) to make the
+- **Jump**: Press the spacebar to make the
   dinosaur jump over obstacles like cacti.
-- **Duck**: Press the down arrow key (or swipe down on mobile) to make the
+- **Duck**: Press the down arrow key to make the
   dinosaur duck, which is useful for avoiding flying obstacles like
   pterodactyls.
   

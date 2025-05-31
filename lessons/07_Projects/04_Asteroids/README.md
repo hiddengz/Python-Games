@@ -68,6 +68,7 @@ In **Asteroids**, the goal is to survive by piloting a spaceship and destroying 
      - Small Asteroid: 100 points
      - Large UFO: 200 points
      - Small UFO: 1000 points
+     - god cube: 5000
 
 ## Winning & Losing
 

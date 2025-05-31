@@ -42,12 +42,9 @@ In **Lunar Lander**, the goal is to safely land a lunar module (spaceship) on th
    - Running out of fuel before landing results in the module crashing.
 
 3. **Safe Landing**:
-   - To land safely, the player must land with a slow enough vertical and horizontal speed. If the module is moving too fast in any direction when it touches down, it will crash.
-   - The game provides feedback on the speed of the descent—if the module is descending too quickly, a crash is imminent.
-   
+   - To land safely, the player must land on the landing zone. once the lunar lander comes in contact with a landing zone, no mater the speed or angle.
 4. **Crash**:
-   - A crash occurs if the module hits the surface too fast or lands at an improper angle.
-   - Crashing results in no points for that landing and the loss of a life or restart, depending on the game version.
+   - A crash occurs if the lander doesnt hit the landing pad.
 
 5. **Points and Difficulty**:
    - Successful landings award points based on the landing zone's difficulty and the smoothness of the landing:
@@ -56,7 +53,7 @@ In **Lunar Lander**, the goal is to safely land a lunar module (spaceship) on th
    - A very smooth, slow landing earns more points than a rough or fast one.
 
 6. **Game Over**:
-   - The game ends when the player runs out of fuel or crashes the module a certain number of times (depending on the version).
+   - The game ends when the player runs out of fuel or crashes the lander (depending on the version).
 
 7. **Continuous Play**:
    - If the player lands successfully, the game may offer additional landing opportunities with reduced fuel and increased difficulty.
